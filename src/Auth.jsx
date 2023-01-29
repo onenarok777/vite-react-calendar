@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Container, Row, Col } from "react-bootstrap";
 import { Box } from "@mui/system";
 import {
@@ -9,23 +10,33 @@ import {
   InputAdornment,
 } from "@mui/material";
 import { Visibility, VisibilityOff } from "@mui/icons-material";
-import LoadingButton from "@mui/lab/LoadingButton";
+import { LoadingButton } from "@mui/lab/";
+import { RuleInput } from "./functions/Rules";
+import axios from "axios";
+import Swal from "sweetalert2";
+import config from "./configs/config.json";
 
 export default () => {
+  // ประกาศรับ เพื่อให้ใช้ใน function ภายในได้
+  const navigate = useNavigate();
+
+  // Set State
   const [showPassword, setShowPassword] = useState(false);
   const [user, setUser] = useState({
     username: null,
     password: null,
   });
+  const [rule, setRule] = useState({
+    username: null,
+    password: null,
+  });
 
+  // function กดปิดเปิด มองเห็น รหัสผ่าน
   const onShowPassword = () => {
     setShowPassword(!showPassword);
   };
 
-  const onClickLogin = () => {
-    console.log(user);
-  };
-
+  // element ดวงตา รหัสผ่าน
   const eyesShowPassword = () => {
     return (
       <InputAdornment position="end">
@@ -36,6 +47,44 @@ export default () => {
     );
   };
 
+  // แจ้งเตือน Error
+  const alertError = () => {
+    Swal.fire({
+      icon: "error",
+      text: "พบข้อผิดพลาด ไม่สามารถเข้าสู้ระบบได้ !?",
+      confirmButtonColor: "#1976D2",
+      confirmButtonText: "ตกลง",
+    });
+  };
+
+  // function เมื่อกดปุ่ม login
+  const onClickLogin = () => {
+    if (!user.username && !user.password) {
+      return;
+    } else {
+      axios
+        .post(config.baseApi + "/login", user)
+        .then((res) => {
+          if (!res.data) {
+            return Swal.fire({
+              icon: "error",
+              text: "ชื่อผู้ใช้ หรือ รหัสผ่าน ไม่ถูกต้อง !?",
+              confirmButtonColor: "#1976D2",
+              confirmButtonText: "ตกลง",
+            });
+          } else {
+            localStorage.setItem("auth_token", res.data.token);
+            localStorage.setItem("auth_user", res.data.user);
+            navigate(res.data.user.type == "admin" ? "/admin" : "/");
+          }
+        })
+        .catch((err) => {
+          alertError();
+        });
+    }
+  };
+
+  // render
   return (
     <Container className="min-vh-100 d-flex">
       <Box
@@ -61,24 +110,37 @@ export default () => {
             my: 2,
             rouded: 2,
           }}
-          label="username"
+          label="ชื่อผู้ใช้"
           size="small"
           onInput={(event) =>
             setUser((state) => {
               let val = {
+                ...state,
                 username: event.target.value,
-                password: state.password,
               };
               return val;
-            })
+            }) ||
+            RuleInput(
+              setRule,
+              event.target.value,
+              "username",
+              "กรุณาระบุ Username"
+            )
           }
+          onKeyPress={(event) => {
+            if (event.key === "Enter") {
+              onClickLogin();
+            }
+          }}
+          error={rule.username ? true : false}
+          helperText={rule.username}
         ></TextField>
         <TextField
           sx={{
             width: "100%",
             my: 2,
           }}
-          label="password"
+          label="รหัสผ่าน"
           type={showPassword ? "text" : "password"}
           InputProps={{
             endAdornment: eyesShowPassword(),
@@ -87,12 +149,25 @@ export default () => {
           onInput={(event) =>
             setUser((state) => {
               let val = {
-                username: state.username,
+                ...state,
                 password: event.target.value,
               };
               return val;
-            })
+            }) ||
+            RuleInput(
+              setRule,
+              event.target.value,
+              "password",
+              "กรุณาระบุ password"
+            )
           }
+          onKeyPress={(event) => {
+            if (event.key === "Enter") {
+              onClickLogin();
+            }
+          }}
+          error={rule.password ? true : false}
+          helperText={rule.password}
         ></TextField>
         <LoadingButton
           sx={{
@@ -101,6 +176,7 @@ export default () => {
           }}
           loadingIndicator="Loading…"
           variant="contained"
+          disabled={user.username && user.password ? false : true}
           onClick={onClickLogin}
         >
           เข้าสู่ระบบ

@@ -1,0 +1,5 @@
+{
+    "baseUrl": "localhost",
+    "post": "5000",
+    "baseApi": "http://localhost:5001"
+}
