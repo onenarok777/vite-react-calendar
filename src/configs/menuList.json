@@ -1,0 +1,12 @@
+[
+    {
+        "admin": [
+            {
+                "label": "จัดการผู้ใช้",
+                "icon": null,
+                "link": "/UserManagement",
+                "allow": true
+            }
+        ]
+    }
+]
