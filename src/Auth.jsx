@@ -48,10 +48,10 @@ export default () => {
   };
 
   // แจ้งเตือน Error
-  const alertError = () => {
+  const alertError = (msgError) => {
     Swal.fire({
       icon: "error",
-      text: "พบข้อผิดพลาด ไม่สามารถเข้าสู้ระบบได้ !?",
+      text: msgError ?? "พบข้อผิดพลาด ไม่สามารถเข้าสู้ระบบได้ !?",
       confirmButtonColor: "#1976D2",
       confirmButtonText: "ตกลง",
     });
@@ -63,9 +63,9 @@ export default () => {
       return;
     } else {
       axios
-        .post(config.baseApi + "/login", user)
+        .post(config.baseApi + "/auth/login", user)
         .then((res) => {
-          if (!res.data) {
+          if (res.data.ength == 0) {
             return Swal.fire({
               icon: "error",
               text: "ชื่อผู้ใช้ หรือ รหัสผ่าน ไม่ถูกต้อง !?",
@@ -74,12 +74,13 @@ export default () => {
             });
           } else {
             localStorage.setItem("auth_token", res.data.token);
-            localStorage.setItem("auth_user", res.data.user);
-            navigate(res.data.user.type == "admin" ? "/admin" : "/");
+            let userType = res?.data?.user?.type
+            navigate(userType == "admin" ? "/admin" : userType == "user" ? "/" : "/error");
           }
         })
         .catch((err) => {
-          alertError();
+          console.log(err.response.data);
+          alertError(err?.response?.data);
         });
     }
   };
